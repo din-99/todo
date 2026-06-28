@@ -1,164 +1,216 @@
-const todo_api_URL = "https://todo-jkgw.onrender.com/api/todo/";
-import popupFun from "./popup.js";
+// === КОНФИГУРАЦИЯ ===
+// Для локальной разработки используем localhost
+// При деплое на Render замените на URL вашего бэкенда
+const API_BASE = 'http://localhost:3000/todo';  // ← измените на ваш URL после деплоя
+let currentFilter = 'all';  // 'all', 'active', 'completed'
+let todos = [];
 
-window.addEventListener("load", async () => {
-  getData();
+// === ЗАГРУЗКА ПРИ СТАРТЕ ===
+window.addEventListener("load", () => {
+    fetchTodos();
 });
 
-//read data
-let getData = async () => {
-  let res = await fetch(todo_api_URL);
-  let data = await res.json();
-  console.log("data:", data);
-  renderDom(data);
-};
+// === ФУНКЦИИ РАБОТЫ С API ===
 
-//render data on page
-let renderDom = (data) => {
-  let dataContainer = document.getElementById("dataContainer");
-  dataContainer.innerHTML = null;
+// Получить все задачи
+async function fetchTodos() {
+    try {
+        const res = await fetch(API_BASE);
+        todos = await res.json();
+        renderTodos(todos);
+        updateCounter(todos);
+    } catch (error) {
+        console.error('Ошибка загрузки:', error);
+    }
+}
 
-  data.forEach(({ id, title, status }) => {
-    // Create card div and add Bootstrap classes
-    let cardDiv = document.createElement("div");
-    cardDiv.className = "col-md-4 card-div";
+// Добавить задачу
+async function addTodoItem() {
+    const input = document.getElementById("todo");
+    const title = input.value.trim();
+    if (!title) return alert('Введите текст задачи');
 
-    // Apply card class to create Bootstrap card
-    let card = document.createElement("div");
-    card.className = "card w-100";
-
-    // Create card body
-    let cardBody = document.createElement("div");
-    cardBody.className = "card-body";
-
-    // Create and style h5 element for card title
-    let h5 = document.createElement("h3");
-    h5.className = "card-title";
-    h5.innerText = title;
-
-    // Create and style p element for card text
-    let p = document.createElement("p");
-    p.className = "card-text";
-    p.innerText = status === true ? "Active" : "Inactive";
-
-    // Create a button element for toggle action
-    let toggleBtn = document.createElement("button");
-    toggleBtn.className = "btn btn-primary";
-    toggleBtn.innerText = "Toggle";
-    toggleBtn.onclick = () => {
-      toggleTodo(id);
+    const newTodo = {
+        title: title,
+        status: false,
+        createdAt: new Date().toLocaleString(),
+        id: Date.now()
     };
 
-    // Create a button element for edit action
-    let editBtn = document.createElement("button");
-    editBtn.className = "btn btn-primary";
-    editBtn.innerText = "Edit";
-    editBtn.onclick = () => {
-      editTodo(id);
-    };
+    try {
+        const res = await fetch(API_BASE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newTodo)
+        });
+        if (res.ok) {
+            input.value = '';
+            await fetchTodos();
+        }
+    } catch (error) {
+        console.error('Ошибка добавления:', error);
+    }
+}
 
-    // Create a button element for remove action
-    let removeBtn = document.createElement("button");
-    removeBtn.className = "btn btn-danger";
-    removeBtn.innerText = "Remove";
-    removeBtn.onclick = () => {
-      deleteTodo(id);
-    };
+// Удалить задачу
+async function deleteTodo(id) {
+    if (!confirm('Удалить задачу?')) return;
+    try {
+        await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+        await fetchTodos();
+    } catch (error) {
+        console.error('Ошибка удаления:', error);
+    }
+}
 
-    // Append elements to build the card structure
-    cardBody.append(h5, p, toggleBtn, editBtn, removeBtn);
-    card.append(cardBody);
-    cardDiv.append(card);
-    dataContainer.append(cardDiv);
-  });
-};
+// Переключить статус (активно/выполнено)
+async function toggleTodo(id) {
+    try {
+        const todo = todos.find(t => t.id === id);
+        if (!todo) return;
+        const updated = { status: !todo.status };
+        await fetch(`${API_BASE}/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updated)
+        });
+        await fetchTodos();
+    } catch (error) {
+        console.error('Ошибка переключения:', error);
+    }
+}
 
-//crud
-//create , read, update(put & patch), delete
+// Редактирование через prompt (inline-редактирование по двойному клику)
+async function editTodoInline(id) {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+    const newTitle = prompt('Редактировать задачу:', todo.title);
+    if (newTitle === null || newTitle.trim() === '') return;
+    try {
+        await fetch(`${API_BASE}/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: newTitle.trim() })
+        });
+        await fetchTodos();
+    } catch (error) {
+        console.error('Ошибка редактирования:', error);
+    }
+}
 
-//create //add item to database
-let addTodoItem = async () => {
-  //get data from user
-  let todo = document.getElementById("todo").value;
+// Очистить все выполненные задачи
+async function clearCompleted() {
+    const completed = todos.filter(t => t.status === true);
+    if (completed.length === 0) return alert('Нет выполненных задач');
+    if (!confirm(`Удалить ${completed.length} выполненных задач?`)) return;
+    try {
+        for (const todo of completed) {
+            await fetch(`${API_BASE}/${todo.id}`, { method: "DELETE" });
+        }
+        await fetchTodos();
+    } catch (error) {
+        console.error('Ошибка очистки:', error);
+    }
+}
 
-  let data = {
-    title: todo,
-    status: false,
-    id: Date.now(),
-  };
-  let response = await fetch(todo_api_URL, {
-    method: "POST",
-    body: JSON.stringify(data),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  getData();
-  document.getElementById("todo").value = null;
-};
-document.querySelector("#add_todo").addEventListener("click", addTodoItem);
+// === ОТРИСОВКА ===
 
-//patch - modifies
-//toggle todo item /// active / inactive
-let toggleTodo = async (id) => {
-  let todo = await fetch(`${todo_api_URL}${id}`);
-  todo = await todo.json();
+// Отрисовать задачи с учётом фильтра
+function renderTodos(data) {
+    const container = document.getElementById("dataContainer");
+    container.innerHTML = '';
 
-  let data = {
-    status: !todo.status,
-  };
+    let filtered = data;
+    if (currentFilter === 'active') {
+        filtered = data.filter(t => t.status === false);
+    } else if (currentFilter === 'completed') {
+        filtered = data.filter(t => t.status === true);
+    }
 
-  let response = await fetch(`${todo_api_URL}${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  getData();
-};
+    if (filtered.length === 0) {
+        container.innerHTML = '<p class="text-center">Нет задач</p>';
+        return;
+    }
 
-//delete todo item
-let deleteTodo = async (id) => {
-  let response = await fetch(`${todo_api_URL}${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  getData();
-};
+    filtered.forEach(({ id, title, status, createdAt }) => {
+        const col = document.createElement("div");
+        col.className = "col-md-4 card-div mb-3";
 
-//pop-up box
-//edit/patch //// edit todo title
-let editTodo = (id) => {
-  popup.style.display = "block";
-  document.getElementById("popup").innerHTML = popupFun();
-  const editedValueInput = document.getElementById("editedValue");
-  const submitButton = document.getElementById("submit");
+        const card = document.createElement("div");
+        card.className = "card w-100";
 
-  submitButton.addEventListener("click", async () => {
-    const enteredValue = editedValueInput.value;
-    // console.log("Entered Value:", enteredValue);
-    popup.style.display = "none";
+        const cardBody = document.createElement("div");
+        cardBody.className = "card-body";
 
-    let updatedTitle = editedValueInput.value;
-    // let updatedTitle = prompt("Enter new Title");
-    if (updatedTitle === "") return false;
-    let todo = await fetch(`${todo_api_URL}${id}`);
-    todo = await todo.json();
+        // Заголовок (с возможностью редактирования по двойному клику)
+        const h5 = document.createElement("h3");
+        h5.className = "card-title";
+        h5.innerText = title;
+        h5.style.cursor = 'pointer';
+        h5.title = 'Двойной клик для редактирования';
+        h5.addEventListener('dblclick', () => editTodoInline(id));
 
-    let data = {
-      title: updatedTitle,
-    };
+        // Статус
+        const p = document.createElement("p");
+        p.className = "card-text";
+        p.innerText = status ? "✅ Выполнено" : "⏳ Активно";
+        p.style.color = status ? 'green' : 'orange';
 
-    let response = await fetch(`${todo_api_URL}${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json",
-      },
+        // Дата создания
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "todo-date";
+        dateSpan.innerText = `📅 ${createdAt || 'не указана'}`;
+
+        // Кнопки управления
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "btn btn-primary btn-sm me-1";
+        toggleBtn.innerText = status ? "↩️ Вернуть" : "✅ Выполнить";
+        toggleBtn.onclick = () => toggleTodo(id);
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn btn-warning btn-sm me-1";
+        editBtn.innerText = "✏️ Edit";
+        editBtn.onclick = () => editTodoInline(id);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "btn btn-danger btn-sm";
+        removeBtn.innerText = "🗑️ Remove";
+        removeBtn.onclick = () => deleteTodo(id);
+
+        cardBody.append(h5, p, dateSpan, document.createElement('br'), toggleBtn, editBtn, removeBtn);
+        card.append(cardBody);
+        col.append(card);
+        container.append(col);
     });
-    getData();
-  });
-};
+
+    updateCounter(data);
+}
+
+// Обновить счётчик активных задач
+function updateCounter(data) {
+    const active = data.filter(t => t.status === false).length;
+    document.getElementById('counter').textContent = `Осталось: ${active}`;
+}
+
+// === ОБРАБОТЧИКИ СОБЫТИЙ ===
+
+// Добавление задачи по кнопке
+document.getElementById("add_todo").addEventListener("click", addTodoItem);
+
+// Добавление по Enter
+document.getElementById("todo").addEventListener("keypress", (e) => {
+    if (e.key === 'Enter') addTodoItem();
+});
+
+// Фильтрация
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFilter = this.dataset.filter;
+        renderTodos(todos);
+    });
+});
+
+// Очистка выполненных
+document.getElementById("clearCompleted").addEventListener("click", clearCompleted);

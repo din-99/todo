@@ -1,3 +1,35 @@
 {
-  "todo": []
+  "todo": [
+    {
+      "title": "сссс",
+      "status": false,
+      "createdAt": "28.06.2026, 22:35:17",
+      "id": "pkTQIA1LatA"
+    },
+    {
+      "title": "свсв",
+      "status": false,
+      "createdAt": "28.06.2026, 22:35:19",
+      "id": "XNsMpCQu9jA"
+    },
+    {
+      "title": "drsf",
+      "status": false,
+      "createdAt": "28.06.2026, 22:35:28",
+      "id": "rVHo4tVfFqw"
+    },
+    {
+      "title": "fsrfsrf",
+      "status": false,
+      "createdAt": "28.06.2026, 22:35:34",
+      "id": "0QbsvC-SVIo"
+    },
+    {
+      "title": "gtdgdg",
+      "status": false,
+      "createdAt": "28.06.2026, 22:35:59",
+      "id": "juZseqHULKo"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }

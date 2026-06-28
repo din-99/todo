@@ -1,39 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Todo-App</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fasthand&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fasthand&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" />
     <link rel="icon" type="image/png"
-        href="https://www.sketchappsources.com/resources/source-image/sketch-3-todo-list-app-icon-template.png">
+          href="https://www.sketchappsources.com/resources/source-image/sketch-3-todo-list-app-icon-template.png" />
+    <style>
+        /* Дополнительные стили для новых элементов */
+        .todo-date { font-size: 0.8rem; color: #6c757d; margin-top: 5px; display: block; }
+        .filter-btn.active { background-color: #0d6efd; color: white; }
+        .counter { margin-top: 15px; font-weight: bold; }
+        .clear-btn { margin-left: 15px; }
+        .edit-input { width: 100%; }
+    </style>
 </head>
-
 <body>
-    <h1>TODO APP</h1>
+    <div class="container mt-4">
+        <h1 class="text-center">TODO APP</h1>
 
-    <div class="inputBox">
-        <div class="input-group mb-3 ">
-            <input type="text" id="todo" class="form-control" placeholder="Enter Todo">
-            <button class="btn btn-outline-secondary" type="button" id="add_todo">Add Todo</button>
+        <!-- Добавление задачи -->
+        <div class="inputBox">
+            <div class="input-group mb-3">
+                <input type="text" id="todo" class="form-control" placeholder="Enter Todo" />
+                <button class="btn btn-outline-secondary" type="button" id="add_todo">Add Todo</button>
+            </div>
         </div>
+
+        <!-- Фильтры и счётчик -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <button class="btn btn-outline-primary filter-btn active" data-filter="all">Все</button>
+                <button class="btn btn-outline-primary filter-btn" data-filter="active">Активные</button>
+                <button class="btn btn-outline-primary filter-btn" data-filter="completed">Выполненные</button>
+            </div>
+            <div>
+                <span class="counter" id="counter">Осталось: 0</span>
+                <button class="btn btn-danger btn-sm clear-btn" id="clearCompleted">Очистить выполненные</button>
+            </div>
+        </div>
+
+        <hr class="border border-danger border-2 opacity-50" />
+
+        <!-- Контейнер для карточек задач -->
+        <div class="row" id="dataContainer"></div>
     </div>
 
-    <hr class="border border-danger border-2 opacity-50">
+    <!-- Попап для редактирования (оставлен как есть, но теперь вызывается через prompt) -->
+    <div id="popup" class="popup" style="display:none;"></div>
 
-    <div class="container">
-        <div class="row" id="dataContainer">
-            <!-- content will be added here -->
-        </div>
-    </div>
-    <div id="popup" class="popup"></div>
-
+    <script type="module" src="./main.js"></script>
 </body>
-
 </html>
-<script type="module" src="./main.js"></script>
